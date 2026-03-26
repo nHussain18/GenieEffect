@@ -1,50 +1,109 @@
-# Welcome to your Expo app 👋
+# 🧞 Genie Effect Animation (React Native)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This project implements a macOS-style Genie minimize animation in React Native using modern animation and rendering libraries.
 
-## Get started
+## 📸 Demo
 
-1. Install dependencies
+https://github.com/user-attachments/assets/GenieEffectDemo.mov
 
-   ```bash
-   npm install
-   ```
+<video src="assets/images/GenieEffectDemo.mov" width="300" controls></video>
 
-2. Start the app
+## ✨ Overview
 
-   ```bash
-   npx expo start
-   ```
+The Genie effect is a visually rich animation where a window:
 
-In the output, you'll find options to open the app in a
+- Bends and deforms
+- Collapses toward a target point (dock)
+- Restores back from the same position
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Instead of using simple scale or translate animations, this implementation recreates the effect using **mesh-based warping**, resulting in a smooth and realistic experience similar to macOS.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🎬 Features
 
-## Get a fresh project
+- 🧞 Genie-style minimize animation
+- 🔄 Reverse restore animation
+- 📍 Dynamic dock position (draggable)
+- 🎯 Animation adapts to dock location in real-time
+- ⚡ Smooth 60fps performance
+- 🧩 Modular and reusable architecture
 
-When you're ready, run:
+## 🧠 How It Works
 
-```bash
-npm run reset-project
+### 1. Mesh-Based Rendering
+
+The UI is rendered as a mesh (grid of vertices) instead of a static view. This allows individual parts of the UI to move independently.
+
+### 2. Vertex Warping
+
+During animation:
+
+- **Top vertices** remain mostly stable
+- **Middle vertices** curve inward
+- **Bottom vertices** collapse toward the dock
+
+This creates the curved "suction" effect.
+
+### 3. Animation Control
+
+A shared animation value (`progress`) drives the entire transformation:
+
+| Value | State                        |
+| ----- | ---------------------------- |
+| `0`   | Fully expanded view          |
+| `1`   | Fully minimized into dock    |
+
+### 4. Dynamic Target (Dock)
+
+- A draggable dock icon defines the target position
+- The animation dynamically adjusts based on its position
+- Ensures realistic and flexible behavior
+
+### 5. Interaction Flow
+
+| Action             | Result                    |
+| ------------------ | ------------------------- |
+| Tap minimize icon  | Starts genie animation    |
+| Drag dock          | Changes animation target  |
+| Tap dock           | Restores the view         |
+
+## 🏗️ Tech Stack
+
+- **Expo** — Development platform & build tooling
+- **React Native** — Core framework
+- **React Native Skia** — Rendering & mesh warping
+- **React Native Reanimated** — Smooth native-driven animations
+- **React Native Gesture Handler** — Drag interactions
+
+## 📦 Architecture
+
+```
+/components
+  ├── GenieEffect.tsx
+  ├── DockIcon.tsx
+
+/hooks
+  ├── useGenieMesh.ts
+
+/utils
+  ├── genieWarp.ts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## ⚙️ Key Concepts
 
-## Learn more
+### Mesh Grid
 
-To learn more about developing your project with Expo, look at the following resources:
+The UI is broken into a grid of points (vertices) which can be moved independently.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Warping
 
-## Join the community
+Instead of transforming the whole view, individual vertices are repositioned to create deformation.
 
-Join our community of developers creating universal apps.
+### Shared Values
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Animation state is managed using shared values for high performance on the UI thread.
+
+## 🚀 Performance Considerations
+
+- Uses native-driven animations for smooth 60fps performance
+- Minimizes re-renders using hooks and memoization
+- Mesh resolution is balanced for visual quality vs performance
