@@ -4,9 +4,10 @@ This project implements a macOS-style Genie minimize animation in React Native u
 
 ## 📸 Demo
 
-https://github.com/user-attachments/assets/GenieEffectDemo.mov
+| iOS                                                                                                                 |
+|---------------------------------------------------------------------------------------------------------------------|
+|<video src="https://github.com/user-attachments/assets/db38728a-ba26-4393-9707-7f46b0faf11d"/> |
 
-<video src="assets/images/GenieEffectDemo.mov" width="300" controls></video>
 
 ## ✨ Overview
 
