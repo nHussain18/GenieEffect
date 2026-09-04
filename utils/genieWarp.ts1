@@ -1,0 +1,123 @@
+/**
+ * Genie effect vertex warping utilities.
+ *
+ * Provides worklet-compatible math functions that compute warped vertex
+ * positions for a macOS-style genie minimize animation using mesh distortion.
+ */
+
+/**
+ * Compute the warped position of a single mesh vertex.
+ *
+ * Uses a cascading flow model: bottom rows begin their journey toward the
+ * dock point first, with upper rows following progressively later.  A
+ * smoothstep interpolation produces the characteristic curved silhouette.
+ *
+ * @param u          Normalised column (0 = left, 1 = right)
+ * @param v          Normalised row   (0 = top,  1 = bottom)
+ * @param progress   Animation progress (0 = rest, 1 = fully minimised)
+ * @param cardX      Card left edge (px)
+ * @param cardY      Card top edge  (px)
+ * @param cardW      Card width     (px)
+ * @param cardH      Card height    (px)
+ * @param dockX      Dock target X  (px)
+ * @param dockY      Dock target Y  (px)
+ */
+export function computeWarpedVertex(
+  u: number,
+  v: number,
+  progress: number,
+  cardX: number,
+  cardY: number,
+  cardW: number,
+  cardH: number,
+  dockX: number,
+  dockY: number,
+): { x: number; y: number } {
+  'worklet';
+
+  const origX = cardX + u * cardW;
+  const origY = cardY + v * cardH;
+  const centerX = cardX + cardW / 2;
+
+  // --- Cascading flow ---------------------------------------------------
+  // Each row has its own start/end progress window.
+  // Bottom rows (v≈1) start immediately and finish early.
+  // Top rows   (v≈0) start later and finish at progress = 1.
+  const startP = (1 - v) * 0.35;
+  const endP = 0.55 + (1 - v) * 0.45;
+  const raw = (progress - startP) / (endP - startP);
+  const t = Math.max(0, Math.min(1, raw));
+
+  // Smoothstep easing (Hermite interpolation)
+  const flow = t * t * (3 - 2 * t);
+
+  // --- Width compression ------------------------------------------------
+  const widthScale = 1 - flow;
+
+  // --- Horizontal centre shift toward dock ------------------------------
+  const newCenterX = centerX + (dockX - centerX) * flow;
+
+  // Base X
+  let newX = newCenterX + (u - 0.5) * cardW * widthScale;
+
+  // --- Subtle wave distortion -------------------------------------------
+  const waveAmp = 4 * Math.sqrt(Math.max(progress * (1 - progress), 0));
+  const wave =
+    Math.sin(v * Math.PI * 3 - progress * Math.PI * 2) *
+    waveAmp *
+    widthScale;
+  newX += wave;
+
+  // --- Vertical position ------------------------------------------------
+  const newY = origY + (dockY - origY) * flow;
+
+  return { x: newX, y: newY };
+}
+
+/**
+ * Generate triangle indices for a cols × rows mesh grid.
+ * Each cell is split into two triangles (top-left → bottom-left → top-right,
+ * top-right → bottom-left → bottom-right).
+ */
+export function generateMeshIndices(cols: number, rows: number): number[] {
+  const indices: number[] = [];
+  const stride = cols + 1;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const tl = row * stride + col;
+      const tr = tl + 1;
+      const bl = tl + stride;
+      const br = bl + 1;
+
+      indices.push(tl, bl, tr);
+      indices.push(tr, bl, br);
+    }
+  }
+
+  return indices;
+}
+
+/**
+ * Generate texture coordinates that map each grid vertex to the
+ * corresponding position in the source image (0,0) → (width, height).
+ */
+export function generateTextureCoords(
+  cols: number,
+  rows: number,
+  width: number,
+  height: number,
+): { x: number; y: number }[] {
+  const coords: { x: number; y: number }[] = [];
+
+  for (let row = 0; row <= rows; row++) {
+    for (let col = 0; col <= cols; col++) {
+      coords.push({
+        x: (col / cols) * width,
+        y: (row / rows) * height,
+      });
+    }
+  }
+
+  return coords;
+}
